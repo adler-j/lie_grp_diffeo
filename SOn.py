@@ -64,7 +64,7 @@ class SOnAlgebra(object):
             return self.element((np.outer(m, v) - np.outer(v, m)) / 2)
 
     def __repr__(self):
-        return '{}.associated_algebra'.format(self.gln)
+        return '{}.associated_algebra'.format(self.son)
 
 
 class SOnAlgebraElement(object):

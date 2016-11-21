@@ -18,9 +18,11 @@ if __name__ == '__main__':
     w1 = W.element([[1, 0, 0],
                     [0, 1, 0],
                     [0, 0, 1]])
-    f2 = 0.1 * odl.solvers.L2NormSquared(W).translated(w1)
+    f2 = 0.2 * odl.solvers.L2NormSquared(W).translated(w1)
 
-    lie_grp = GLn(3)
+    # SELECT GLn or SOn here
+    # lie_grp = GLn(3)
+    lie_grp = SOn(3)
     assalg = lie_grp.associated_algebra
 
     Ainv = lambda x: x
@@ -41,8 +43,8 @@ if __name__ == '__main__':
     ax.scatter(0, 0, 0, c='k')
     ax.plot([0, v1[0]], [0, v1[1]], [0, v1[2]])
 
-    eps = 0.01
-    for i in range(10):
+    eps = 0.1
+    for i in range(100):
         u = Ainv(assalg.inf_action_adj(r3, v, f1.gradient(v)) +
                  assalg.inf_action_adj(W, w, f2.gradient(w)))
 
