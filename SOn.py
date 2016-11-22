@@ -32,12 +32,19 @@ class SOnElement(object):
 
     def action(self, domain):
         if isinstance(domain, odl.ProductSpace):
-            mat_vec_ops = [odl.MatVecOperator(self.arr, domi, domi)
-                           for domi in domain]
-            return odl.DiagonalOperator(*mat_vec_ops)
-        else:
+            subops = [self.action(domi) for domi in domain]
+            return odl.DiagonalOperator(*subops)
+        elif (isinstance(domain, odl.space.base_ntuples.FnBase) and
+              domain.size == self.group.n):
             mat_vec_op = odl.MatVecOperator(self.arr, domain, domain)
             return mat_vec_op
+        elif isinstance(domain, odl.DiscreteLp):
+            pts = domain.points()
+            deformed_pts = self.arr.dot(pts.T) - pts.T
+            deformed_pts = domain.tangent_bundle.element(deformed_pts)
+            return odl.deform.LinDeformFixedDisp(deformed_pts)
+        else:
+            assert False
 
     def compose(self, other):
         return self.group.element(self.arr.dot(other.arr))
@@ -50,6 +57,9 @@ class SOnAlgebra(object):
     def __init__(self, son):
         self.son = son
 
+    def zero(self):
+        return self.element(np.zeros([self.son.n, self.son.n]))
+
     def element(self, arg):
         return SOnAlgebraElement(self, arg)
 
@@ -58,10 +68,25 @@ class SOnAlgebra(object):
 
     def inf_action_adj(self, domain, v, m):
         if isinstance(domain, odl.ProductSpace):
-            return self.element(sum((np.outer(mi, vi) - np.outer(vi, mi)) / 2
-                                    for mi, vi in zip(m, v)))
-        else:
+            return sum((self.inf_action_adj(domi, vi, mi)
+                        for domi, vi, mi in zip(domain, v, m)),
+                       self.zero())
+        elif (isinstance(domain, odl.space.base_ntuples.FnBase) and
+              domain.size == self.son.n):
             return self.element((np.outer(m, v) - np.outer(v, m)) / 2)
+        elif isinstance(domain, odl.DiscreteLp):
+            pts = domain.tangent_bundle.element(domain.points().T)
+            grad = odl.Gradient(domain)
+            gradv = grad(v)
+            result = np.zeros([self.son.n, self.son.n])
+            for i in range(self.son.n):
+                for j in range(self.son.n):
+                    result[i, j] = m.inner(gradv[i] * pts[j])
+
+            result = result - result.T
+            return self.element(result)
+        else:
+            assert False
 
     def __repr__(self):
         return '{}.associated_algebra'.format(self.son)
@@ -78,9 +103,17 @@ class SOnAlgebraElement(object):
             mat_vec_ops = [odl.MatVecOperator(self.arr, domi, domi)
                            for domi in domain]
             return odl.DiagonalOperator(*mat_vec_ops)
-        else:
+        elif (isinstance(domain, odl.space.base_ntuples.FnBase) and
+              domain.size == self.algebra.son.n):
             mat_vec_op = odl.MatVecOperator(self.arr, domain, domain)
             return mat_vec_op
+        elif isinstance(domain, odl.DiscreteLp):
+            pts = domain.points()
+            deformed_pts = self.arr.dot(pts.T) - pts.T
+            deformed_pts = domain.tangent_bundle.element(deformed_pts)
+            return odl.deform.LinDeformFixedDisp(deformed_pts)
+        else:
+            assert False
 
     def __repr__(self):
         return '{!r}.element({!r})'.format(self.algebra, self.arr)

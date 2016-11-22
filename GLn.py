@@ -41,9 +41,12 @@ class GLnElement(object):
             deformed_pts = self.arr.dot(pts.T) - pts.T
             deformed_pts = domain.tangent_bundle.element(deformed_pts)
             return odl.deform.LinDeformFixedDisp(deformed_pts)
-        else:
+        elif (isinstance(domain, odl.space.base_ntuples.FnBase) and
+              domain.size == self.group.n):
             mat_vec_op = odl.MatVecOperator(self.arr, domain, domain)
             return mat_vec_op
+        else:
+            assert False
 
     def compose(self, other):
         return self.group.element(self.arr.dot(other.arr))
@@ -79,8 +82,11 @@ class GLnAlgebra(object):
                 for j in range(self.gln.n):
                     result[i, j] = m.inner(gradv[i] * pts[j])
             return self.element(result)
-        else:
+        elif (isinstance(domain, odl.space.base_ntuples.FnBase) and
+              domain.size == self.gln.n):
             return self.element(np.outer(m, v))
+        else:
+            assert False
 
     def __repr__(self):
         return '{}.associated_algebra'.format(self.gln)
@@ -100,9 +106,12 @@ class GLnAlgebraElement(object):
             deformed_pts = self.arr.dot(pts.T) - pts.T
             deformed_pts = domain.tangent_bundle.element(deformed_pts)
             return odl.deform.LinDeformFixedDisp(deformed_pts)
-        else:
+        elif (isinstance(domain, odl.space.base_ntuples.FnBase) and
+              domain.size == self.algebra.gln.n):
             mat_vec_op = odl.MatVecOperator(self.arr, domain, domain)
             return mat_vec_op
+        else:
+            assert False
 
     def __repr__(self):
         return '{!r}.element({!r})'.format(self.algebra, self.arr)
