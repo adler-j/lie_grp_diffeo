@@ -5,7 +5,7 @@ from lie_group import LieGroup, LieGroupElement, LieAlgebra, LieAlgebraElement
 from action import LieAction
 
 
-__all__ = ('MatrixGroup', 'MatrixVectorAction')
+__all__ = ('GLn', 'SOn', 'MatrixVectorAction', 'MatrixImageAction')
 
 
 class MatrixGroup(LieGroup):

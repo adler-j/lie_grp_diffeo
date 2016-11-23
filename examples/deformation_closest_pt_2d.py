@@ -1,8 +1,6 @@
-from SOn import SOn
-from GLn import GLn
+from lie_group_diffeo import GLn, SOn, MatrixVectorAction, ProductSpaceAction
 import odl
 import numpy as np
-import scipy as sp
 
 if __name__ == '__main__':
     # linear interpolation has boundary problems.
@@ -21,6 +19,8 @@ if __name__ == '__main__':
 
     lie_grp = GLn(2)
     assalg = lie_grp.associated_algebra
+    point_action = MatrixVectorAction(lie_grp, space)
+    power_action = ProductSpaceAction(point_action, W.size)
 
     Ainv = lambda x: x
 
@@ -35,16 +35,16 @@ if __name__ == '__main__':
 
     eps = 0.01
     for i in range(1000):
-        u = Ainv(assalg.inf_action_adj(space, v, f1.gradient(v)) +
-                 assalg.inf_action_adj(W, w, f2.gradient(w)))
+        u = Ainv(point_action.inf_action_adj(v, f1.gradient(v)) +
+                 power_action.inf_action_adj(w, f2.gradient(w)))
 
         if 0:
-            v -= eps * u.inf_action(space)(v)
-            w -= eps * u.inf_action(W)(w)
+            v -= eps * point_action.inf_action(u)(v)
+            w -= eps * power_action.inf_action(u)(w)
         else:
             g = g.compose(assalg.exp(-eps * u))
-            v = g.action(space)(v0)
-            w = g.action(W)(w1)
+            v = point_action.action(g)(v0)
+            w = power_action.action(g)(w1)
 
         callback(v)
         print(f1(v) - f2(w))

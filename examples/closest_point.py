@@ -1,5 +1,4 @@
-from action import ProductSpaceAction
-from matrix_group import GLn, SOn, MatrixVectorAction
+from lie_group_diffeo import GLn, SOn, MatrixVectorAction, ProductSpaceAction
 import odl
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt

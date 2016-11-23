@@ -2,6 +2,9 @@ import odl
 from numbers import Integral
 
 
+__all__ = ('LieAction', 'ProductSpaceAction')
+
+
 class LieAction(object):
     """Action of a lie group on some set."""
     def __init__(self, lie_group, domain):
