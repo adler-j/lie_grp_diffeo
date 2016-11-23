@@ -1,8 +1,7 @@
-from SOn import SOn
-from GLn import GLn
+from matrix_group import GLn, MatrixImageAction
+from action import ProductSpaceAction
 import odl
 import numpy as np
-import scipy as sp
 
 if __name__ == '__main__':
     space = odl.uniform_discr(-1, 1, 1000, interp='linear')
@@ -19,6 +18,8 @@ if __name__ == '__main__':
 
     lie_grp = GLn(1)
     assalg = lie_grp.associated_algebra
+    deform_action = MatrixImageAction(lie_grp, space)
+    power_action = ProductSpaceAction(deform_action, W.size)
 
     Ainv = lambda x: x
 
@@ -32,17 +33,17 @@ if __name__ == '__main__':
     callback(v1)
 
     eps = 0.5
-    for i in range(20):
-        u = Ainv(assalg.inf_action_adj(space, v, f1.gradient(v)) +
-                 assalg.inf_action_adj(W, w, f2.gradient(w)))
+    for i in range(100):
+        u = Ainv(deform_action.inf_action_adj(v, f1.gradient(v)) +
+                 power_action.inf_action_adj(w, f2.gradient(w)))
 
         if 0:
-            v -= eps * u.inf_action(space)(v)
-            w -= eps * u.inf_action(W)(w)
+            v -= eps * deform_action.inf_action(u)(v)
+            w -= eps * power_action.inf_action(u)(w)
         else:
             g = g.compose(assalg.exp(-eps * u))
-            v = g.action(space)(v0)
-            w = g.action(W)(w1)
+            v = deform_action.action(g)(v0)
+            w = power_action.action(g)(w1)
 
         callback(v)
         print(f1(v) - f2(w))

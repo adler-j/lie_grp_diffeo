@@ -108,10 +108,11 @@ class SOnAlgebraElement(object):
             mat_vec_op = odl.MatVecOperator(self.arr, domain, domain)
             return mat_vec_op
         elif isinstance(domain, odl.DiscreteLp):
+            grad = odl.Gradient(domain)
             pts = domain.points()
             deformed_pts = self.arr.dot(pts.T) - pts.T
-            deformed_pts = domain.tangent_bundle.element(deformed_pts)
-            return odl.deform.LinDeformFixedDisp(deformed_pts)
+            deformed_pts = grad.range.element(deformed_pts)
+            return odl.PointwiseInner(grad.range, deformed_pts) * grad
         else:
             assert False
 

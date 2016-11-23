@@ -1,8 +1,6 @@
-from SOn import SOn
-from GLn import GLn
+from action import ProductSpaceAction
+from matrix_group import GLn, SOn, MatrixVectorAction
 import odl
-import numpy as np
-import scipy as sp
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 
@@ -22,8 +20,10 @@ if __name__ == '__main__':
 
     # SELECT GLn or SOn here
     # lie_grp = GLn(3)
-    lie_grp = SOn(3)
+    lie_grp = GLn(3)
     assalg = lie_grp.associated_algebra
+    point_action = MatrixVectorAction(lie_grp, r3)
+    power_action = ProductSpaceAction(point_action, 3)
 
     Ainv = lambda x: x
 
@@ -45,19 +45,15 @@ if __name__ == '__main__':
 
     eps = 0.1
     for i in range(100):
-        u = Ainv(assalg.inf_action_adj(r3, v, f1.gradient(v)) +
-                 assalg.inf_action_adj(W, w, f2.gradient(w)))
+        u = Ainv(point_action.inf_action_adj(v, f1.gradient(v)) +
+                 power_action.inf_action_adj(w, f2.gradient(w)))
 
         if 0:
-            v -= eps * u.inf_action(r3)(v)
-            w -= eps * u.inf_action(W)(w)
+            v -= eps * point_action.inf_action(u)(v)
+            w -= eps * power_action.inf_action(u)(w)
         else:
-            print('a', (eps * u), assalg.exp(-eps * u))
             g = g.compose(assalg.exp(-eps * u))
-            v = g.action(r3)(v0)
-            w = g.action(W)(w1)
+            v = point_action.action(g)(v0)
+            w = power_action.action(g)(w1)
 
         ax.scatter(v[0], v[1], v[2], c='b')
-
-        print(v, w)
-        print(f1(v) + f2(w))
