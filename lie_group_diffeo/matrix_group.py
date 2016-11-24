@@ -151,6 +151,10 @@ class SOnAlgebraElement(MatrixAlgebraElement):
 class MatrixVectorAction(LieAction):
     """Action by matrix vector product."""
 
+    def __init__(self, lie_group, domain):
+        LieAction.__init__(self, lie_group, domain)
+        assert lie_group.size == domain.size
+
     def action(self, lie_grp_element):
         return odl.MatVecOperator(lie_grp_element.arr,
                                   self.domain, self.domain)
@@ -168,6 +172,7 @@ class MatrixImageAction(LieAction):
 
     def __init__(self, lie_group, domain, gradient=None):
         LieAction.__init__(self, lie_group, domain)
+        assert lie_group.size == domain.ndim
         if gradient is None:
             self.gradient = odl.Gradient(self.domain)
         else:
