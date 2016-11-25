@@ -7,6 +7,7 @@ from action import LieAction
 
 __all__ = ('GLn', 'SOn',
            'MatrixVectorAction', 'MatrixImageAction',
+           'MatrixDeterminantAction',
            'AffineGroup',
            'MatrixVectorAffineAction', 'MatrixImageAffineAction')
 
@@ -251,6 +252,30 @@ class MatrixImageAction(LieAction):
                 result[i, j] = m.inner(gradv[i] * pts[j])
 
         return self.lie_group.associated_algebra.element(result)
+
+
+class MatrixDeterminantAction(LieAction):
+    """Action by matrix vector product."""
+
+    def __init__(self, lie_group, domain):
+        LieAction.__init__(self, lie_group, domain)
+        assert domain.size == 1
+
+    def action(self, lie_grp_element):
+        assert lie_grp_element in self.lie_group
+        return odl.ScalingOperator(self.domain,
+                                   np.linalg.det(lie_grp_element.arr))
+
+    def inf_action(self, lie_alg_element):
+        assert lie_alg_element in self.lie_group.associated_algebra
+        return odl.ScalingOperator(self.domain,
+                                   np.linalg.trace(lie_alg_element.arr))
+
+    def inf_action_adj(self, v, m):
+        assert v in self.domain
+        assert m in self.domain
+        eye = float(m * v) * np.eye(self.lie_group.size)
+        return self.lie_group.associated_algebra.element(eye)
 
 
 class MatrixVectorAffineAction(LieAction):
