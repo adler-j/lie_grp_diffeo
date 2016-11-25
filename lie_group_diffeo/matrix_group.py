@@ -7,7 +7,8 @@ from action import LieAction
 
 __all__ = ('GLn', 'SOn',
            'MatrixVectorAction', 'MatrixImageAction',
-           'MatrixVectorAffineAction')
+           'AffineGroup',
+           'MatrixVectorAffineAction', 'MatrixImageAffineAction')
 
 
 class MatrixGroup(LieGroup):
@@ -158,6 +159,9 @@ class AffineGroup(MatrixGroup):
         A v
         0 1
     """
+    def __init__(self, n):
+        MatrixGroup.__init__(self, n + 1)
+
     @property
     def associated_algebra(self):
         return AffineGroupAlgebra(self)
@@ -296,7 +300,7 @@ class MatrixImageAffineAction(LieAction):
         assert lie_grp_element in self.lie_group
         pts = self.domain.points()
         deformed_pts = lie_grp_element.arr[:-1, :-1].dot(pts.T) - pts.T
-        deformed_pts += lie_grp_element.arr[:-1, -1]
+        deformed_pts += lie_grp_element.arr[:-1, -1][:, None]
         deformed_pts = self.domain.tangent_bundle.element(deformed_pts)
         return odl.deform.LinDeformFixedDisp(deformed_pts)
 
@@ -304,7 +308,7 @@ class MatrixImageAffineAction(LieAction):
         assert lie_alg_element in self.lie_group.associated_algebra
         pts = self.domain.points()
         deformed_pts = lie_alg_element.arr[:-1, :-1].dot(pts.T) - pts.T
-        deformed_pts += lie_alg_element.arr[:-1, -1]
+        deformed_pts += lie_alg_element.arr[:-1, -1][:, None]
         deformed_pts = self.domain.tangent_bundle.element(deformed_pts)
         pointwise_inner = odl.PointwiseInner(self.gradient.range, deformed_pts)
         return pointwise_inner * self.gradient
