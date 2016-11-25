@@ -5,7 +5,7 @@ import numpy as np
 # linear interpolation has boundary problems.
 space = odl.uniform_discr([-1, -1], [1, 1], [300, 300], interp='linear')
 
-transform_type = 'affine'
+transform_type = 'rotate'
 if transform_type == 'affine':
     transform = odl.deform.LinDeformFixedDisp(
         space.tangent_bundle.element([lambda x: x[0] * 0.3 + x[1] * 0.2,
@@ -25,7 +25,8 @@ v1 = transform(v0)
 f1 = odl.solvers.L2NormSquared(space).translated(v1)
 
 # Select lie group of deformations
-lie_grp = lgd.GLn(2)
+#lie_grp = lgd.GLn(2)
+lie_grp = lgd.SLn(2)
 #lie_grp = lgd.SOn(2)
 deform_action = lgd.MatrixImageAction(lie_grp, space)
 #lie_grp = lgd.AffineGroup(2)

@@ -5,7 +5,7 @@ from lie_group import LieGroup, LieGroupElement, LieAlgebra, LieAlgebraElement
 from action import LieAction
 
 
-__all__ = ('GLn', 'SOn',
+__all__ = ('GLn', 'SLn', 'SOn',
            'MatrixVectorAction', 'MatrixImageAction',
            'MatrixDeterminantAction',
            'AffineGroup',
@@ -122,6 +122,33 @@ class GLnAlgebra(MatrixAlgebra):
 
 
 class GLnAlgebraElement(MatrixAlgebraElement):
+    pass
+
+
+class SLn(MatrixGroup):
+    @property
+    def associated_algebra(self):
+        return SLnAlgebra(self)
+
+    @property
+    def element_type(self):
+        return SLnElement
+
+
+class SLnElement(MatrixGroupElement):
+    pass
+
+
+class SLnAlgebra(MatrixAlgebra):
+    @property
+    def element_type(self):
+        return SLnAlgebraElement
+
+    def project(self, array):
+        return array - np.eye(self.size) * np.trace(array) / self.size
+
+
+class SLnAlgebraElement(MatrixAlgebraElement):
     pass
 
 
@@ -269,7 +296,7 @@ class MatrixDeterminantAction(LieAction):
     def inf_action(self, lie_alg_element):
         assert lie_alg_element in self.lie_group.associated_algebra
         return odl.ScalingOperator(self.domain,
-                                   np.linalg.trace(lie_alg_element.arr))
+                                   np.trace(lie_alg_element.arr))
 
     def inf_action_adj(self, v, m):
         assert v in self.domain
