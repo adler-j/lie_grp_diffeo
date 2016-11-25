@@ -8,7 +8,7 @@ from action import LieAction
 __all__ = ('GLn', 'SLn', 'SOn',
            'MatrixVectorAction', 'MatrixImageAction',
            'MatrixDeterminantAction',
-           'AffineGroup',
+           'AffineGroup', 'EuclideanGroup',
            'MatrixVectorAffineAction', 'MatrixImageAffineAction')
 
 
@@ -206,7 +206,7 @@ class AffineGroupElement(MatrixGroupElement):
 class AffineGroupAlgebra(MatrixAlgebra):
     @property
     def element_type(self):
-        return AffineAlgebraElement
+        return AffineGroupAlgebraElement
 
     def project(self, array):
         cpy = array.copy()
@@ -214,7 +214,49 @@ class AffineGroupAlgebra(MatrixAlgebra):
         return cpy
 
 
-class AffineAlgebraElement(MatrixAlgebraElement):
+class AffineGroupAlgebraElement(MatrixAlgebraElement):
+    pass
+
+
+class EuclideanGroup(MatrixGroup):
+    """Euclidean group represented via matrices.
+
+    The euclidean group is the set of rigid transformations.
+
+    The matrices have the form::
+
+        A v
+        0 1
+    """
+    def __init__(self, n):
+        MatrixGroup.__init__(self, n + 1)
+
+    @property
+    def associated_algebra(self):
+        return EuclideanGroupAlgebra(self)
+
+    @property
+    def element_type(self):
+        return EuclideanGroupElement
+
+
+class EuclideanGroupElement(MatrixGroupElement):
+    pass
+
+
+class EuclideanGroupAlgebra(MatrixAlgebra):
+    @property
+    def element_type(self):
+        return EuclideanGroupAlgebraElement
+
+    def project(self, array):
+        cpy = array.copy()
+        cpy[:-1, :-1] = cpy[:-1, :-1] - cpy[:-1, :-1].T
+        cpy[-1] = 0
+        return cpy
+
+
+class EuclideanGroupAlgebraElement(MatrixAlgebraElement):
     pass
 
 
