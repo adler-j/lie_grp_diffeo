@@ -1,5 +1,4 @@
-from SOn import SOn
-from GLn import GLn
+from lie_group_diffeo import GLn, SOn, MatrixImageAction, MatrixVectorAction, ProductSpaceAction
 import odl
 import numpy as np
 import scipy as sp
@@ -36,6 +35,8 @@ f2 = 0.01 * odl.solvers.L2NormSquared(W).translated(w1)
 
 lie_grp = GLn(2)
 assalg = lie_grp.associated_algebra
+image_action = MatrixImageAction(lie_grp, space)
+point_action = ProductSpaceAction(MatrixVectorAction(lie_grp, W[0]), 2)
 
 Ainv = lambda x: x
 
@@ -50,16 +51,16 @@ v1.show('target point')
 
 eps = 0.05
 for i in range(1000):
-    u = Ainv(assalg.inf_action_adj(ray_trafo.domain, v, f1.gradient(v)) +
-             assalg.inf_action_adj(W, w, f2.gradient(w)))
+    u = Ainv(image_action.inf_action_adj(v, f1.gradient(v)) +
+             point_action.inf_action_adj(w, f2.gradient(w)))
 
     if 0:
-        v -= eps * u.inf_action(space)(v)
-        w -= eps * u.inf_action(W)(w)
+        v -= eps * image_action.inf_action(u)(v)
+        w -= eps * point_action.inf_action(u)(w)
     else:
         g = g.compose(assalg.exp(-eps * u))
-        v = g.action(space)(v0)
-        w = g.action(W)(w1)
+        v = image_action.action(g)(v0)
+        w = point_action.action(g)(w1)
 
     callback(v)
     print(f1(v) + f2(w))
