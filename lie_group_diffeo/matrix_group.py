@@ -117,8 +117,8 @@ class MatrixAlgebraElement(LieAlgebraElement):
 
     """A Matrix."""
 
-    def __init__(self, lie_group, arr):
-        LieAlgebraElement.__init__(self, lie_group)
+    def __init__(self, lie_algebra, arr):
+        LieAlgebraElement.__init__(self, lie_algebra)
         self.arr = np.asarray(arr, dtype=float)
 
     def __repr__(self):
