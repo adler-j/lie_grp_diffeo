@@ -112,9 +112,9 @@ class DiffAlgebra(LieAlgebra):
 
 
 class DiffAlgebraElement(LieAlgebraElement):
-    def __init__(self, lie_algebra, arr):
+    def __init__(self, lie_algebra, data):
         LieAlgebraElement.__init__(self, lie_algebra)
-        self.data = np.asarray(arr, dtype=float)
+        self.data = self.lie_algebra.data_space.element(data)
 
     def __repr__(self):
         return '{!r}.element({!r})'.format(self.space, self.arr)
@@ -134,16 +134,14 @@ class GeometricDeformationAction(LieAction):
 
     def action(self, lie_grp_element):
         assert lie_grp_element in self.lie_group
-        pts = self.domain.points()
-        deformed_pts = lie_grp_element.arr.dot(pts.T) - pts.T
-        deformed_pts = self.domain.tangent_bundle.element(deformed_pts)
+        pts = self.domain.points().T
+        pts = self.lie_group.coord_space.element(pts)
+        deformed_pts = lie_grp_element.data - pts
         return odl.deform.LinDeformFixedDisp(deformed_pts)
 
     def inf_action(self, lie_alg_element):
         assert lie_alg_element in self.lie_group.associated_algebra
-        pts = self.domain.points()
-        deformed_pts = lie_alg_element.arr.dot(pts.T) - pts.T
-        deformed_pts = self.domain.tangent_bundle.element(deformed_pts)
+        deformed_pts = lie_alg_element.data
         pointwise_inner = odl.PointwiseInner(self.gradient.range, deformed_pts)
         return pointwise_inner * self.gradient
 
