@@ -41,6 +41,11 @@ class LieGroupElement(object):
         """Compose this element with other."""
         raise NotImplementedError('abstract method')
 
+    @property
+    def inverse(self):
+        """The inverse of this element."""
+        raise NotImplementedError('abstract method')
+
 
 class LieAlgebra(odl.LinearSpace):
     def __init__(self, lie_group):

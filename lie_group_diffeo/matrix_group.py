@@ -60,6 +60,11 @@ class MatrixGroupElement(LieGroupElement):
         """Compose two elements via matrix multiplication."""
         return self.lie_group.element(self.arr.dot(other.arr))
 
+    @property
+    def inverse(self):
+        """Inverse is given by matrix inversion."""
+        return self.lie_group.element(np.linalg.inv(self.arr))
+
     def __repr__(self):
         return '{!r}.element({!r})'.format(self.lie_group, self.arr)
 
