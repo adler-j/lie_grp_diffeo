@@ -43,8 +43,8 @@ ax.plot([0, v1[0]], [0, v1[1]], [0, v1[2]])
 
 eps = 0.1
 for i in range(100):
-    u = Ainv(point_action.inf_action_adj(v, f1.gradient(v)) +
-             power_action.inf_action_adj(w, f2.gradient(w)))
+    u = Ainv(point_action.momentum_map(v, f1.gradient(v)) +
+             power_action.momentum_map(w, f2.gradient(w)))
 
     if 0:
         v -= eps * point_action.inf_action(u)(v)

@@ -277,7 +277,7 @@ class MatrixVectorAction(LieAction):
         return odl.MatVecOperator(lie_alg_element.arr,
                                   self.domain, self.domain)
 
-    def inf_action_adj(self, v, m):
+    def momentum_map(self, v, m):
         assert v in self.domain
         assert m in self.domain
         return self.lie_group.associated_algebra.element(np.outer(m, v))
@@ -309,7 +309,7 @@ class MatrixImageAction(LieAction):
         pointwise_inner = odl.PointwiseInner(self.gradient.range, deformed_pts)
         return pointwise_inner * self.gradient
 
-    def inf_action_adj(self, v, m):
+    def momentum_map(self, v, m):
         assert v in self.domain
         assert m in self.domain
         size = self.lie_group.size
@@ -340,7 +340,7 @@ class MatrixDeterminantAction(LieAction):
         return odl.ScalingOperator(self.domain,
                                    np.trace(lie_alg_element.arr))
 
-    def inf_action_adj(self, v, m):
+    def momentum_map(self, v, m):
         assert v in self.domain
         assert m in self.domain
         eye = float(m * v) * np.eye(self.lie_group.size)
@@ -368,7 +368,7 @@ class MatrixVectorAffineAction(LieAction):
         translation_vec = self.domain.element(lie_alg_element.myarray[:-1, -1])
         return matrix_op + translation_vec
 
-    def inf_action_adj(self, v, m):
+    def momentum_map(self, v, m):
         assert v in self.domain
         assert m in self.domain
         v_appended = np.ones(v.size + 1)
@@ -407,7 +407,7 @@ class MatrixImageAffineAction(LieAction):
         pointwise_inner = odl.PointwiseInner(self.gradient.range, deformed_pts)
         return pointwise_inner * self.gradient
 
-    def inf_action_adj(self, v, m):
+    def momentum_map(self, v, m):
         assert v in self.domain
         assert m in self.domain
         size = self.lie_group.size

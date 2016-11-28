@@ -51,8 +51,8 @@ v1.show('target point')
 
 eps = 0.05
 for i in range(1000):
-    u = Ainv(image_action.inf_action_adj(v, f1.gradient(v)) +
-             point_action.inf_action_adj(w, f2.gradient(w)))
+    u = Ainv(image_action.momentum_map(v, f1.gradient(v)) +
+             point_action.momentum_map(w, f2.gradient(w)))
 
     if 0:
         v -= eps * image_action.inf_action(u)(v)

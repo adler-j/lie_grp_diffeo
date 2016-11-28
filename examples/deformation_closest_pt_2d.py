@@ -69,8 +69,8 @@ v1.show('target point')
 
 eps = 0.005
 for i in range(1000):
-    u = Ainv(deform_action.inf_action_adj(v, f1.gradient(v)) +
-             regularizer_action.inf_action_adj(w, f2.gradient(w)))
+    u = Ainv(deform_action.momentum_map(v, f1.gradient(v)) +
+             regularizer_action.momentum_map(w, f2.gradient(w)))
 
     if 0:
         v -= eps * deform_action.inf_action(u)(v)
