@@ -1,7 +1,6 @@
 from lie_group_diffeo import GLn, SOn, MatrixImageAction, MatrixVectorAction, ProductSpaceAction
 import odl
 import numpy as np
-import scipy as sp
 
 # linear interpolation has boundary problems.
 space = odl.uniform_discr([-1, -1], [1, 1], [200, 200], interp='linear')

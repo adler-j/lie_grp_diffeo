@@ -1,8 +1,17 @@
+"""Definitions of concrete Matrix Lie groups."""
+
+# Imports for common Python 2/3 codebase
+from __future__ import print_function, division, absolute_import
+from future import standard_library
+standard_library.install_aliases()
+
+
 import odl
 import numpy as np
 import scipy as sp
-from lie_group import LieGroup, LieGroupElement, LieAlgebra, LieAlgebraElement
-from action import LieAction
+from lie_group_diffeo.lie_group import (LieGroup, LieGroupElement, LieAlgebra,
+                                        LieAlgebraElement)
+from lie_group_diffeo.action import LieAction
 
 
 __all__ = ('GLn', 'SLn', 'SOn',
@@ -13,6 +22,9 @@ __all__ = ('GLn', 'SLn', 'SOn',
 
 
 class MatrixGroup(LieGroup):
+
+    """Group of square matrices with matrix mult as group operation."""
+
     def __init__(self, size):
         self.size = size
 
@@ -37,11 +49,15 @@ class MatrixGroup(LieGroup):
 
 
 class MatrixGroupElement(LieGroupElement):
+
+    """A Matrix."""
+
     def __init__(self, lie_group, arr):
         LieGroupElement.__init__(self, lie_group)
         self.arr = np.asarray(arr, dtype=float)
 
     def compose(self, other):
+        """Compose two elements via matrix multiplication."""
         return self.lie_group.element(self.arr.dot(other.arr))
 
     def __repr__(self):
@@ -49,6 +65,14 @@ class MatrixGroupElement(LieGroupElement):
 
 
 class MatrixAlgebra(LieAlgebra):
+
+    """Vector space of matrices.
+
+    The linear combination is defined pointwise.
+
+    The inner product is the Frobenious inner product.
+    """
+
     def __init__(self, lie_group):
         LieAlgebra.__init__(self, lie_group=lie_group)
 
@@ -83,12 +107,11 @@ class MatrixAlgebra(LieAlgebra):
         """Exponential map via matrix exponential."""
         return self.lie_group.element(sp.linalg.expm(el.arr))
 
-    def __eq__(self, other):
-        return (isinstance(other, MatrixAlgebra) and
-                self.lie_group == other.lie_group)
-
 
 class MatrixAlgebraElement(LieAlgebraElement):
+
+    """A Matrix."""
+
     def __init__(self, lie_group, arr):
         LieAlgebraElement.__init__(self, lie_group)
         self.arr = np.asarray(arr, dtype=float)
@@ -98,6 +121,9 @@ class MatrixAlgebraElement(LieAlgebraElement):
 
 
 class GLn(MatrixGroup):
+
+    """The set of all invertible matrices."""
+
     @property
     def associated_algebra(self):
         return GLnAlgebra(self)
@@ -126,6 +152,9 @@ class GLnAlgebraElement(MatrixAlgebraElement):
 
 
 class SLn(MatrixGroup):
+
+    """The set of all matrices with determinant 1."""
+
     @property
     def associated_algebra(self):
         return SLnAlgebra(self)
@@ -153,6 +182,14 @@ class SLnAlgebraElement(MatrixAlgebraElement):
 
 
 class SOn(MatrixGroup):
+
+    """The set of all orthogonal matrices.
+
+    A matrix ``Q`` is orthogonal if::
+
+        Q^T Q = Q Q^T = I
+    """
+
     @property
     def associated_algebra(self):
         return SOnAlgebra(self)
@@ -180,13 +217,18 @@ class SOnAlgebraElement(MatrixAlgebraElement):
 
 
 class AffineGroup(MatrixGroup):
+
     """Affine group represented via matrices.
 
     The matrices have the form::
 
         A v
         0 1
+
+    where ``A`` is an invertible ``n x n`` matrix, ``v`` is a ``n x 1`` vector,
+    0 is a ``1 x n`` vector with all zeros and ``1`` is simply a scalar.
     """
+
     def __init__(self, n):
         MatrixGroup.__init__(self, n + 1)
 
@@ -225,8 +267,11 @@ class EuclideanGroup(MatrixGroup):
 
     The matrices have the form::
 
-        A v
+        Q v
         0 1
+
+    where ``Q`` is an orthogonal ``n x n`` matrix, ``v`` is a ``n x 1`` vector,
+    0 is a ``1 x n`` vector with all zeros and ``1`` is simply a scalar.
     """
     def __init__(self, n):
         MatrixGroup.__init__(self, n + 1)
@@ -261,6 +306,7 @@ class EuclideanGroupAlgebraElement(MatrixAlgebraElement):
 
 
 class MatrixVectorAction(LieAction):
+
     """Action by matrix vector product."""
 
     def __init__(self, lie_group, domain):
@@ -284,6 +330,7 @@ class MatrixVectorAction(LieAction):
 
 
 class MatrixImageAction(LieAction):
+
     """Action on image via coordinate transformation."""
 
     def __init__(self, lie_group, domain, gradient=None):
@@ -324,6 +371,7 @@ class MatrixImageAction(LieAction):
 
 
 class MatrixDeterminantAction(LieAction):
+
     """Action by matrix vector product."""
 
     def __init__(self, lie_group, domain):
@@ -348,6 +396,7 @@ class MatrixDeterminantAction(LieAction):
 
 
 class MatrixVectorAffineAction(LieAction):
+
     """Action by affine matrix vector product."""
 
     def __init__(self, lie_group, domain):
@@ -380,6 +429,7 @@ class MatrixVectorAffineAction(LieAction):
 
 
 class MatrixImageAffineAction(LieAction):
+
     """Action on image via affine coordinate transformation."""
 
     def __init__(self, lie_group, domain, gradient=None):

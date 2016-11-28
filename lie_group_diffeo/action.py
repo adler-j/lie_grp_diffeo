@@ -1,3 +1,10 @@
+"""Definitions of abstract actions with Lie groups."""
+
+# Imports for common Python 2/3 codebase
+from __future__ import print_function, division, absolute_import
+from future import standard_library
+standard_library.install_aliases()
+
 import odl
 from numbers import Integral
 
@@ -6,7 +13,9 @@ __all__ = ('LieAction', 'ProductSpaceAction')
 
 
 class LieAction(object):
+
     """Action of a lie group on some set."""
+
     def __init__(self, lie_group, domain):
         self.lie_group = lie_group
         self.domain = domain
@@ -17,18 +26,20 @@ class LieAction(object):
         raise NotImplementedError('abstract method')
 
     def inf_action(self, lie_grp_element):
-        """Return the action, an odl.Operator associated with lie_grp_element.
+        """Return the infinitesimal action, an odl.Operator associated with
+        ``lie_grp_element``.
         """
         raise NotImplementedError('abstract method')
 
     def momentum_map(self, v, m):
-        """Return the infinitessimal action, an odl.Operator associated with
-        v and m.
+        """Return the infinitessimal action, an `lie_group.associated_algebra`
+        object associated with ``v`` and ``m``.
         """
         raise NotImplementedError('abstract method')
 
 
 class ProductSpaceAction(object):
+
     """Action on a product space as defined by several "sub-actions"."""
 
     def __init__(self, *actions):

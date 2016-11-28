@@ -1,6 +1,12 @@
+"""Definitions of abstract Lie groups."""
+
+# Imports for common Python 2/3 codebase
+from __future__ import print_function, division, absolute_import
+from future import standard_library
+standard_library.install_aliases()
+
+
 import odl
-import numpy as np
-import scipy as sp
 
 
 __all__ = ('LieGroup', 'LieAlgebra')
@@ -42,7 +48,7 @@ class LieAlgebra(odl.LinearSpace):
         self.lie_group = lie_group
 
     def exp(self, el):
-        """Compose this element with other."""
+        """Convert ``el`` into a `lie_group` element by the exponetial map."""
         raise NotImplementedError('abstract method')
 
     @property
@@ -51,7 +57,14 @@ class LieAlgebra(odl.LinearSpace):
         raise NotImplementedError('abstract method')
 
     def __repr__(self):
+        """Return ``repr(self)``."""
         return '{!r}.associated_algebra'.format(self.lie_group)
+
+    def __eq__(self, other):
+        """Return ``self == other``."""
+        return ((isinstance(self, type(other)) or
+                 isinstance(other, type(self))) and
+                self.lie_group == other.lie_group)
 
 
 class LieAlgebraElement(odl.LinearSpaceElement):
