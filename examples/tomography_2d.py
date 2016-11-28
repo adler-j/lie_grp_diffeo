@@ -1,4 +1,4 @@
-from lie_group_diffeo import GLn, SOn, MatrixImageAction, MatrixVectorAction, ProductSpaceAction
+import lie_group_diffeo as lgd
 import odl
 import numpy as np
 
@@ -15,51 +15,97 @@ else:
         space.tangent_bundle.element([lambda x: (np.cos(theta) - 1) * x[0] + np.sin(theta) * x[1],
                                       lambda x: -np.sin(theta) * x[0] + (np.cos(theta) - 1) * x[1]]))
 
-v0 = odl.phantom.shepp_logan(space, modified=True)
-
 # Make a parallel beam geometry with flat detector
 angle_partition = odl.uniform_partition(0, np.pi, 10)
-detector_partition = odl.uniform_partition(-30, 30, 558)
+detector_partition = odl.uniform_partition(-2, 2, 300)
 geometry = odl.tomo.Parallel2dGeometry(angle_partition, detector_partition)
 ray_trafo = odl.tomo.RayTransform(space, geometry, impl='astra_cuda')
 
-v1 = transform(v0)
-f1 = odl.solvers.L2NormSquared(ray_trafo.range).translated(ray_trafo(v1)) * ray_trafo
+# Create template and target
+template = odl.phantom.shepp_logan(space, modified=True)
+target = transform(template)
+data = ray_trafo(target)
 
+# Define data matching functional
+data_matching = odl.solvers.L2NormSquared(ray_trafo.range).translated(data)
+data_matching = data_matching * ray_trafo  # compose from the right
 
-W = odl.ProductSpace(odl.rn(2), 2)
-w1 = W.element([[1, 0],
-                [0, 1]])
-f2 = 0.01 * odl.solvers.L2NormSquared(W).translated(w1)
+# Define the lie group to use.
+lie_grp_type = 'rigid'
+if lie_grp_type == 'gln':
+    lie_grp = lgd.GLn(space.ndim)
+    deform_action = lgd.MatrixImageAction(lie_grp, space)
+elif lie_grp_type == 'son':
+    lie_grp = lgd.SOn(space.ndim)
+    deform_action = lgd.MatrixImageAction(lie_grp, space)
+elif lie_grp_type == 'sln':
+    lie_grp = lgd.SLn(space.ndim)
+    deform_action = lgd.MatrixImageAction(lie_grp, space)
+elif lie_grp_type == 'affine':
+    lie_grp = lgd.AffineGroup(space.ndim)
+    deform_action = lgd.MatrixImageAffineAction(lie_grp, space)
+elif lie_grp_type == 'rigid':
+    lie_grp = lgd.EuclideanGroup(space.ndim)
+    deform_action = lgd.MatrixImageAffineAction(lie_grp, space)
+else:
+    assert False
 
-lie_grp = GLn(2)
-assalg = lie_grp.associated_algebra
-image_action = MatrixImageAction(lie_grp, space)
-point_action = ProductSpaceAction(MatrixVectorAction(lie_grp, W[0]), 2)
+# Define what regularizer to use
+regularizer = 'point'
+if regularizer == 'image':
+    # Create set of all points in space
+    W = space.tangent_bundle
+    w = W.element(space.points().T)
 
-Ainv = lambda x: x
+    # Create regularizing functional
+    regularizer = 0.1 * odl.solvers.L2NormSquared(W).translated(w)
 
-v = v0.copy()
-w = w1.copy()
+    # Create action
+    regularizer_action = lgd.ProductSpaceAction(deform_action, W.size)
+elif regularizer == 'point':
+    W = odl.ProductSpace(odl.rn(space.ndim), 3)
+    w = W.element([[0, 0],
+                   [0, 1],
+                   [1, 0]])
+
+    # Create regularizing functional
+    regularizer = 0.01 * odl.solvers.L2NormSquared(W).translated(w)
+
+    # Create action
+    if lie_grp_type == 'affine' or lie_grp_type == 'rigid':
+        point_action = lgd.MatrixVectorAffineAction(lie_grp, W[0])
+    else:
+        point_action = lgd.MatrixVectorAction(lie_grp, W[0])
+    regularizer_action = lgd.ProductSpaceAction(point_action, W.size)
+elif regularizer == 'determinant':
+    W = odl.rn(1)
+    w = W.element([1])
+
+    # Create regularizing functional
+    regularizer = 0.2 * odl.solvers.L2NormSquared(W).translated(w)
+
+    # Create action
+    regularizer_action = lgd.MatrixDeterminantAction(lie_grp, W)
+else:
+    assert False
+
+# Initial guess
 g = lie_grp.identity
 
-callback = odl.solvers.CallbackShow(display_step=10)
+# Combine action and functional into single object.
+action = lgd.ProductSpaceAction(deform_action, regularizer_action)
+x = action.domain.element([template, w]).copy()
+f = odl.solvers.SeparableSum(data_matching, regularizer)
 
-v0.show('starting point')
-v1.show('target point')
+# Show some results, reuse the plot
+template.show('template')
+target.show('target')
 
-eps = 0.05
-for i in range(1000):
-    u = Ainv(image_action.inf_action_adj(v, f1.gradient(v)) +
-             point_action.inf_action_adj(w, f2.gradient(w)))
+# Create callback that displays the current iterate and prints the function
+# value
+callback = odl.solvers.CallbackShow(lie_grp_type, display_step=10, indices=0)
+callback &= odl.solvers.CallbackPrint(f)
 
-    if 0:
-        v -= eps * image_action.inf_action(u)(v)
-        w -= eps * point_action.inf_action(u)(w)
-    else:
-        g = g.compose(assalg.exp(-eps * u))
-        v = image_action.action(g)(v0)
-        w = point_action.action(g)(w1)
-
-    callback(v)
-    print(f1(v) + f2(w))
+# Solve via gradient flow
+lgd.gradient_flow_solver(x, f, g, action,
+                         niter=200, line_search=0.02, callback=callback)
