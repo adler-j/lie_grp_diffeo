@@ -1,4 +1,4 @@
-from lie_group_diffeo import GLn, SOn, MatrixVectorAction, ProductSpaceAction
+import lie_group_diffeo as lgd
 import odl
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
@@ -18,18 +18,24 @@ f2 = 0.2 * odl.solvers.L2NormSquared(W).translated(w1)
 
 # SELECT GLn or SOn here
 # lie_grp = GLn(3)
-lie_grp = GLn(3)
+# lie_grp = lgd.SOn(3)
+# point_action = lgd.MatrixVectorAction(lie_grp, r3)
+
+lie_grp = lgd.AffineGroup(3)
+point_action = lgd.MatrixVectorAffineAction(lie_grp, r3)
+
 assalg = lie_grp.associated_algebra
-point_action = MatrixVectorAction(lie_grp, r3)
-power_action = ProductSpaceAction(point_action, 3)
+power_action = lgd.ProductSpaceAction(point_action, 3)
 
-Ainv = lambda x: x
+# Combine action and functional into single object.
+action = lgd.ProductSpaceAction(point_action, power_action)
+x = action.domain.element([v0, w1])
+f = odl.solvers.SeparableSum(f1, f2)
 
-v = v0.copy()
-w = w1.copy()
-
+# Initial guess
 g = lie_grp.identity
 
+# Create some plotting info
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
 ax.set_xlim(-2, 2)
@@ -41,17 +47,15 @@ ax.scatter(v1[0], v1[1], v1[2], c='r')
 ax.scatter(0, 0, 0, c='k')
 ax.plot([0, v1[0]], [0, v1[1]], [0, v1[2]])
 
-eps = 0.1
-for i in range(100):
-    u = Ainv(point_action.momentum_map(v, f1.gradient(v)) +
-             power_action.momentum_map(w, f2.gradient(w)))
 
-    if 0:
-        v -= eps * point_action.inf_action(u)(v)
-        w -= eps * power_action.inf_action(u)(w)
-    else:
-        g = g.compose(assalg.exp(-eps * u))
-        v = point_action.action(g)(v0)
-        w = power_action.action(g)(w1)
+def callback(x):
+    # Show trajectory of target point
+    ax.scatter(x[0][0], x[0][1], x[0][2], c='b')
 
-    ax.scatter(v[0], v[1], v[2], c='b')
+    # Also show trajectory of reference points
+    ax.scatter(x[1][0][0], x[1][0][1], x[1][0][2], c='c')
+    ax.scatter(x[1][1][0], x[1][1][1], x[1][1][2], c='c')
+    ax.scatter(x[1][2][0], x[1][2][1], x[1][2][2], c='c')
+
+lgd.gradient_flow_solver(x, f, g, action,
+                         niter=100, line_search=0.1, callback=callback)

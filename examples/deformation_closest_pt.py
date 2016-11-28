@@ -2,17 +2,17 @@ import lie_group_diffeo as lgd
 import odl
 import numpy as np
 
-typ = 'Affine'
-
 space = odl.uniform_discr(-1, 1, 1000, interp='nearest')
 
-v0 = space.element(lambda x: np.exp(-x**2 / 0.2**2))
-v1 = space.element(lambda x: np.exp(-(x-0.1)**2 / 0.3**2))
+# Define template
+template = space.element(lambda x: np.exp(-x**2 / 0.2**2))
+target = space.element(lambda x: np.exp(-(x-0.1)**2 / 0.3**2))
 
-f1 = odl.solvers.L2NormSquared(space).translated(v1)
+# Define data matching functional
+data_matching = odl.solvers.L2NormSquared(space).translated(target)
 
 # Define the lie group to use.
-lie_grp_type = 'affine'
+lie_grp_type = 'rigid'
 if lie_grp_type == 'gln':
     lie_grp = lgd.GLn(1)
     deform_action = lgd.MatrixImageAction(lie_grp, space)
@@ -32,66 +32,60 @@ else:
     assert False
 
 # Define what regularizer to use
-regularizer = 'determinant'
+regularizer = 'image'
 if regularizer == 'image':
+    # Create set of all points in space
     W = space.tangent_bundle
-    w1 = W.element([lambda x: x[0]])
+    w = W.element(space.points().T)
 
     # Create regularizing functional
-    f2 = 0.01 * odl.solvers.L2NormSquared(W).translated(w1)
+    regularizer = 0.01 * odl.solvers.L2NormSquared(W).translated(w)
 
     # Create action
     regularizer_action = lgd.ProductSpaceAction(deform_action, W.size)
 elif regularizer == 'point':
-    W = odl.ProductSpace(odl.rn(2), 2)
-    w1 = W.element([[1, 0],
-                    [0, 1]])
+    W = odl.ProductSpace(odl.rn(space.ndim), 2)
+    w = W.element([[0], [1]])
 
     # Create regularizing functional
-    f2 = 0.01 * odl.solvers.L2NormSquared(W).translated(w1)
+    regularizer = 0.01 * odl.solvers.L2NormSquared(W).translated(w)
 
     # Create action
-    point_action = lgd.MatrixVectorAction(lie_grp, W[0])
-    regularizer_action = lgd.ProductSpaceAction(deform_action, W.size)
+    if lie_grp_type == 'affine' or lie_grp_type == 'rigid':
+        point_action = lgd.MatrixVectorAffineAction(lie_grp, W[0])
+    else:
+        point_action = lgd.MatrixVectorAction(lie_grp, W[0])
+    regularizer_action = lgd.ProductSpaceAction(point_action, W.size)
 elif regularizer == 'determinant':
     W = odl.rn(1)
-    w1 = W.element([1])
+    w = W.element([1])
 
     # Create regularizing functional
-    f2 = 0.02 * odl.solvers.L2NormSquared(W).translated(w1)
+    regularizer = 0.2 * odl.solvers.L2NormSquared(W).translated(w)
 
     # Create action
     regularizer_action = lgd.MatrixDeterminantAction(lie_grp, W)
 else:
     assert False
 
-assalg = lie_grp.associated_algebra
-
-Ainv = lambda x: x
-
-v = v0.copy()
-w = w1.copy()
+# Initial guess
 g = lie_grp.identity
 
-callback = odl.solvers.CallbackShow(lie_grp_type)
+# Combine action and functional into single object.
+action = lgd.ProductSpaceAction(deform_action, regularizer_action)
+x = action.domain.element([template, w]).copy()
+f = odl.solvers.SeparableSum(data_matching, regularizer)
 
-callback(v0)
-callback(v1)
+# Show some results, reuse the plot
+fig = template.show()
+target.show(fig=fig)
 
-eps = 0.2
-for i in range(30):
-    u = Ainv(deform_action.momentum_map(v, f1.gradient(v)) +
-             regularizer_action.momentum_map(w, f2.gradient(w)))
+# Create callback that displays the current iterate and prints the function
+# value
+callback = odl.solvers.CallbackShow(lie_grp_type, display_step=10,
+                                    indices=0, fig=[fig])
+callback &= odl.solvers.CallbackPrint(f)
 
-    if 0:
-        v -= eps * deform_action.inf_action(u)(v)
-        w -= eps * regularizer_action.inf_action(u)(w)
-    else:
-        g = g.compose(assalg.exp(-eps * u))
-        v = deform_action.action(g)(v0)
-        w = regularizer_action.action(g)(w1)
-
-    #callback(v)
-    print(f1(v) + f2(w))
-
-callback(v)
+# Solve via gradient flow
+lgd.gradient_flow_solver(x, f, g, action,
+                         niter=50, line_search=0.2, callback=callback)
