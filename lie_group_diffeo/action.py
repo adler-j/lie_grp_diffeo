@@ -9,7 +9,7 @@ import odl
 from numbers import Integral
 
 
-__all__ = ('LieAction', 'ProductSpaceAction')
+__all__ = ('LieAction', 'ProductSpaceAction', 'IdentityAction')
 
 
 class LieAction(object):
@@ -38,7 +38,7 @@ class LieAction(object):
         raise NotImplementedError('abstract method')
 
 
-class ProductSpaceAction(object):
+class ProductSpaceAction(LieAction):
 
     """Action on a product space as defined by several "sub-actions"."""
 
@@ -71,3 +71,21 @@ class ProductSpaceAction(object):
         return sum((ac.inf_action_adj(vi, mi)
                     for ac, vi, mi in zip(self.actions, v, m)),
                    self.lie_group.associated_algebra.zero())
+
+
+def IdentityAction(LieAction):
+
+    """The action that maps any element to itself."""
+
+    def action(self, lie_grp_element):
+        assert lie_grp_element in self.lie_group
+        return odl.IdentityOperator(self.domain)
+
+    def inf_action(self, lie_alg_element):
+        assert lie_alg_element in self.lie_group.associated_algebra
+        return odl.ZeroOperator(self.domain)
+
+    def inf_action_adj(self, v, m):
+        assert v in self.domain
+        assert m in self.domain
+        return self.lie_group.associated_algebra.zero()
