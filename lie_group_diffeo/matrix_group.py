@@ -60,8 +60,13 @@ class MatrixGroupElement(LieGroupElement):
         """Compose two elements via matrix multiplication."""
         return self.lie_group.element(self.arr.dot(other.arr))
 
+    @property
+    def inverse(self):
+        """Inverse is given by matrix inversion."""
+        return self.lie_group.element(np.linalg.inv(self.arr))
+
     def __repr__(self):
-        return '{!r}.element({!r})'.format(self.lie_group, self.arr)
+        return '{!r}.element(\n{!r})'.format(self.lie_group, self.arr)
 
 
 class MatrixAlgebra(LieAlgebra):
@@ -117,7 +122,7 @@ class MatrixAlgebraElement(LieAlgebraElement):
         self.arr = np.asarray(arr, dtype=float)
 
     def __repr__(self):
-        return '{!r}.element({!r})'.format(self.space, self.arr)
+        return '{!r}.element(\n{!r})'.format(self.space, self.arr)
 
 
 class GLn(MatrixGroup):
@@ -240,6 +245,10 @@ class AffineGroup(MatrixGroup):
     def element_type(self):
         return AffineGroupElement
 
+    def __repr__(self):
+        """Return ``repr(self).``"""
+        return '{}({})'.format(self.__class__.__name__, self.size - 1)
+
 
 class AffineGroupElement(MatrixGroupElement):
     pass
@@ -283,6 +292,10 @@ class EuclideanGroup(MatrixGroup):
     @property
     def element_type(self):
         return EuclideanGroupElement
+
+    def __repr__(self):
+        """Return ``repr(self).``"""
+        return '{}({})'.format(self.__class__.__group__, self.size - 1)
 
 
 class EuclideanGroupElement(MatrixGroupElement):
@@ -337,7 +350,8 @@ class MatrixImageAction(LieAction):
         LieAction.__init__(self, lie_group, domain)
         assert lie_group.size == domain.ndim
         if gradient is None:
-            self.gradient = odl.Gradient(self.domain)
+            # should use method=central, others introduce a bias.
+            self.gradient = odl.Gradient(self.domain, method='central')
         else:
             self.gradient = gradient
 
@@ -407,14 +421,14 @@ class MatrixVectorAffineAction(LieAction):
         assert lie_grp_element in self.lie_group
         matrix_op = odl.MatVecOperator(lie_grp_element.arr[:-1, :-1],
                                        self.domain, self.domain)
-        translation_vec = self.domain.element(lie_grp_element.myarray[:-1, -1])
+        translation_vec = self.domain.element(lie_grp_element.arr[:-1, -1])
         return matrix_op + translation_vec
 
     def inf_action(self, lie_alg_element):
         assert lie_alg_element in self.lie_group.associated_algebra
         matrix_op = odl.MatVecOperator(lie_alg_element.arr[:-1, :-1],
                                        self.domain, self.domain)
-        translation_vec = self.domain.element(lie_alg_element.myarray[:-1, -1])
+        translation_vec = self.domain.element(lie_alg_element.arr[:-1, -1])
         return matrix_op + translation_vec
 
     def inf_action_adj(self, v, m):
@@ -436,7 +450,8 @@ class MatrixImageAffineAction(LieAction):
         LieAction.__init__(self, lie_group, domain)
         assert lie_group.size == domain.ndim + 1
         if gradient is None:
-            self.gradient = odl.Gradient(self.domain)
+            # should use method=central, others introduce a bias.
+            self.gradient = odl.Gradient(self.domain, method='central')
         else:
             self.gradient = gradient
 
