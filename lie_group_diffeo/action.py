@@ -32,8 +32,9 @@ class LieAction(object):
         raise NotImplementedError('abstract method')
 
     def momentum_map(self, v, m):
-        """Return the infinitessimal action, an `lie_group.associated_algebra`
-        object associated with ``v`` and ``m``.
+        """The momentum map corresponding to the infinitesimal action.
+        Returns a `lie_group.associated_algebra` object associated with 
+        base point ``v`` and momentum ``m``.
         """
         raise NotImplementedError('abstract method')
 
