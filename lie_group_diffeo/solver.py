@@ -45,7 +45,7 @@ def gradient_flow_solver(x, f, g, action, niter, line_search=1,
     x0 = x.copy()
 
     for i in range(niter):
-        u = Ainv(action.inf_action_adj(x, f.gradient(x)))
+        u = Ainv(action.momentum_map(x, f.gradient(x)))
 
         if 0:
             x -= line_search * action.inf_action(u)(x)

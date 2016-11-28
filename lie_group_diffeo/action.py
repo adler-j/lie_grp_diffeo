@@ -31,9 +31,10 @@ class LieAction(object):
         """
         raise NotImplementedError('abstract method')
 
-    def inf_action_adj(self, v, m):
-        """Return the infinitessimal action, an `lie_group.associated_algebra`
-        object associated with ``v`` and ``m``.
+    def momentum_map(self, v, m):
+        """The momentum map corresponding to the infinitesimal action.
+        Returns a `lie_group.associated_algebra` object associated with 
+        base point ``v`` and momentum ``m``.
         """
         raise NotImplementedError('abstract method')
 
@@ -65,10 +66,10 @@ class ProductSpaceAction(LieAction):
         subops = [ac.inf_action(lie_alg_element) for ac in self.actions]
         return odl.DiagonalOperator(*subops)
 
-    def inf_action_adj(self, v, m):
+    def momentum_map(self, v, m):
         assert v in self.domain
         assert m in self.domain
-        return sum((ac.inf_action_adj(vi, mi)
+        return sum((ac.momentum_map(vi, mi)
                     for ac, vi, mi in zip(self.actions, v, m)),
                    self.lie_group.associated_algebra.zero())
 
@@ -85,7 +86,7 @@ def IdentityAction(LieAction):
         assert lie_alg_element in self.lie_group.associated_algebra
         return odl.ZeroOperator(self.domain)
 
-    def inf_action_adj(self, v, m):
+    def momentum_map(self, v, m):
         assert v in self.domain
         assert m in self.domain
         return self.lie_group.associated_algebra.zero()
