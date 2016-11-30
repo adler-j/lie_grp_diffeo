@@ -14,7 +14,7 @@ def _pspace_el_asarray(element):
     pts = np.empty([element.size,
                     element[0].size])
     for i, xi in enumerate(element):
-        pts[i] = xi.asarray()
+        pts[i] = xi.asarray().ravel(order=xi.order)
     return pts
 
 
@@ -133,7 +133,7 @@ class DiffAlgebraElement(LieAlgebraElement):
         self.data = self.lie_algebra.data_space.element(data)
 
     def __repr__(self):
-        return '{!r}.element({!r})'.format(self.space, self.arr)
+        return '{!r}.element({!r})'.format(self.space, self.data)
 
 
 class GeometricDeformationAction(LieAction):
@@ -153,7 +153,8 @@ class GeometricDeformationAction(LieAction):
         pts = self.domain.points().T
         pts = self.lie_group.coord_space.element(pts)
         deformed_pts = lie_grp_element.data - pts
-        return odl.deform.LinDeformFixedDisp(deformed_pts)
+        return odl.deform.LinDeformFixedDisp(deformed_pts,
+                                             templ_space=self.domain)
 
     def inf_action(self, lie_alg_element):
         assert lie_alg_element in self.lie_group.associated_algebra
