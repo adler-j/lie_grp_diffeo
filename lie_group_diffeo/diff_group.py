@@ -1,6 +1,5 @@
 import odl
 import numpy as np
-import scipy as sp
 from lie_group import LieGroup, LieGroupElement, LieAlgebra, LieAlgebraElement
 from action import LieAction
 
@@ -21,7 +20,11 @@ def _pspace_el_asarray(element):
 
 class Diff(LieGroup):
     """Group of diffeomorphisms on some manifold M."""
-    def __init__(self, coord_space):
+    def __init__(self, domain, coord_space=None):
+        assert isinstance(domain, odl.DiscreteLp)
+        self.domain = domain
+        if coord_space is None:
+            coord_space = domain.tangent_bundle  # not really correct, but W/E
         assert isinstance(coord_space, odl.ProductSpace)
         assert coord_space.is_power_space
         self.coord_space = coord_space
@@ -64,7 +67,6 @@ class DiffElement(LieGroupElement):
 
     def compose(self, other):
         pts = _pspace_el_asarray(other.data)
-
         def_pts = [dati.interpolation(pts) for dati in self.data]
         return self.lie_group.element(def_pts)
 
@@ -97,18 +99,32 @@ class DiffAlgebra(LieAlgebra):
         if inp is None:
             return self.zero()
         else:
-            return self.element_type(self, inp)
+            return self.element_type(self, self.project(inp))
+
+    def project(self, vectors):
+        """Project vectors on the algebra."""
+        for i in range(len(vectors)):
+            vectors[i][0] = 0
+            vectors[i][-1] = 0
+            stepi = self.data_space[0].cell_sides[i]
+            vectors[i][1:-1] = np.clip(vectors[i][1:-1],
+                                       vectors[i][:-2] - stepi,
+                                       vectors[i][2:] + stepi)
+        return vectors
 
     def exp(self, el):
         """Exponential map via addition."""
-        pts = self.data_space.points().T
+        pts = self.data_space[0].points().T
         increment = _pspace_el_asarray(el.data)
-
         return self.lie_group.element(pts + increment)
 
     def __eq__(self, other):
         return (isinstance(other, DiffAlgebra) and
                 self.lie_group == other.lie_group)
+
+    @property
+    def element_type(self):
+        return DiffAlgebraElement
 
 
 class DiffAlgebraElement(LieAlgebraElement):
@@ -126,7 +142,7 @@ class GeometricDeformationAction(LieAction):
 
     def __init__(self, lie_group, domain, gradient=None):
         LieAction.__init__(self, lie_group, domain)
-        assert lie_group.size == domain.ndim
+        assert lie_group.domain == domain
         if gradient is None:
             self.gradient = odl.Gradient(self.domain)
         else:
@@ -145,15 +161,8 @@ class GeometricDeformationAction(LieAction):
         pointwise_inner = odl.PointwiseInner(self.gradient.range, deformed_pts)
         return pointwise_inner * self.gradient
 
-    def inf_action_adj(self, v, m):
-        assert v in self.domain
+    def momentum_map(self, f, m):
+        assert f in self.domain
         assert m in self.domain
-        size = self.lie_group.size
-        pts = self.domain.tangent_bundle.element(self.domain.points().T)
-        gradv = self.gradient(v)
-        result = np.zeros([size, size])
-        for i in range(size):
-            for j in range(size):
-                result[i, j] = m.inner(gradv[i] * pts[j])
-
-        return self.lie_group.associated_algebra.element(result)
+        gradf = self.gradient(f)
+        return self.lie_group.associated_algebra.element(gradf * m)

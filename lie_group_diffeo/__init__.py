@@ -13,5 +13,8 @@ __all__ += lie_group.__all__
 from .matrix_group import *
 __all__ += matrix_group.__all__
 
+from .diff_group import *
+__all__ += diff_group.__all__
+
 from .solver import *
 __all__ += solver.__all__

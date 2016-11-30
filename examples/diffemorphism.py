@@ -2,14 +2,39 @@ import lie_group_diffeo as lgd
 import odl
 import numpy as np
 
+space = odl.uniform_discr(-1, 1, 1000, interp='linear')
 
-space = odl.uniform_discr(-1, 1, 30, interp='nearest')
-tgtspc = space.tangent_bundle
+# Define template
+template = space.element(lambda x: np.exp(-x**2 / 0.2**2))
+target = space.element(lambda x: np.exp(-(x-0.1)**2 / 0.3**2))
 
-pts = space.points().T
-def_pts = tgtspc.element(pts**2)
-def_pts2 = tgtspc.element(pts**3)
+# Define data matching functional
+data_matching = odl.solvers.L1Norm(space).translated(target)
 
-def_pts3 = tgtspc.element([def_pts[0].interpolation(def_pts2)])
-def_pts3.show()
-tgtspc.element(pts**6).show()
+lie_grp = lgd.Diff(space)
+deform_action = lgd.GeometricDeformationAction(lie_grp, space)
+
+# Initial guess
+g = lie_grp.identity
+
+# Combine action and functional into single object.
+action = deform_action
+x = template.copy()
+f = data_matching
+
+# Show some results, reuse the plot
+fig = template.show()
+target.show(fig=fig)
+
+# Create callback that displays the current iterate and prints the function
+# value
+callback = odl.solvers.CallbackShow('diffemorphic matching', display_step=50,
+                                    fig=fig)
+callback &= odl.solvers.CallbackPrint(f)
+
+# Solve via gradient flow
+result = lgd.gradient_flow_solver(x, f, g, action,
+                                  niter=2000, line_search=0.0001,
+                                  callback=callback)
+
+result.data.show('Resulting diffeo')

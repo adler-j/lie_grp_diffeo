@@ -73,4 +73,6 @@ class LieAlgebra(odl.LinearSpace):
 
 
 class LieAlgebraElement(odl.LinearSpaceElement):
-    pass
+    @property
+    def lie_algebra(self):
+        return self.space
