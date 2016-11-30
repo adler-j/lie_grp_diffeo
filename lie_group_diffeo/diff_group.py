@@ -4,7 +4,8 @@ from lie_group import LieGroup, LieGroupElement, LieAlgebra, LieAlgebraElement
 from action import LieAction
 
 
-__all__ = ('Diff', 'GeometricDeformationAction')
+__all__ = ('Diff', 'GeometricDeformationAction',
+           'JacobianDeterminantScalingAction')
 
 
 def _pspace_el_asarray(element):
@@ -16,6 +17,44 @@ def _pspace_el_asarray(element):
     for i, xi in enumerate(element):
         pts[i] = xi.asarray().ravel(order=xi.order)
     return pts
+
+
+def _moveaxis(arr, source, dest):
+    """Implementation of `numpy.moveaxis`.
+
+    Needed since `numpy.moveaxis` requires numpy 1.11, which ODL doesn't
+    have as a dependency.
+    """
+    try:
+        source = list(source)
+    except TypeError:
+        source = [source]
+    try:
+        dest = list(dest)
+    except TypeError:
+        dest = [dest]
+
+    source = [a + arr.ndim if a < 0 else a for a in source]
+    dest = [a + arr.ndim if a < 0 else a for a in dest]
+
+    order = [n for n in range(arr.ndim) if n not in source]
+
+    for dest, src in sorted(zip(dest, source)):
+        order.insert(dest, src)
+
+    return arr.transpose(order)
+
+
+def _pspace_el_asmatrix(vec):
+    """Convert ``x`` to an array."""
+    domain = vec[0].space
+    shape = domain[0].shape + (len(vec),) + domain.shape
+    arr = np.empty(shape, dtype=domain.dtype)
+    for i, xi in enumerate(vec):
+        for j, xij in enumerate(xi):
+            arr[..., i, j] = xij.asarray()
+
+    return arr
 
 
 class Diff(LieGroup):
@@ -81,6 +120,10 @@ class DiffAlgebra(LieAlgebra):
         # Not technically correct but W/E for now
         self.data_space = lie_group.coord_space
 
+        # TODO: This needs to be severely improved
+        self.indicator = lie_group.domain.element(
+            lambda x: np.exp(-sum((xi/0.85)**20 for xi in x)))
+
     def _lincomb(self, a, x1, b, x2, out):
         """Linear combination by data space."""
         out.data.lincomb(a, x1.data, b, x2.data)
@@ -104,12 +147,7 @@ class DiffAlgebra(LieAlgebra):
     def project(self, vectors):
         """Project vectors on the algebra."""
         for i in range(len(vectors)):
-            vectors[i][0] = 0
-            vectors[i][-1] = 0
-            stepi = self.data_space[0].cell_sides[i]
-            vectors[i][1:-1] = np.clip(vectors[i][1:-1],
-                                       vectors[i][:-2] - stepi,
-                                       vectors[i][2:] + stepi)
+            vectors[i] *= self.indicator
         return vectors
 
     def exp(self, el):
@@ -144,7 +182,7 @@ class GeometricDeformationAction(LieAction):
         LieAction.__init__(self, lie_group, domain)
         assert lie_group.domain == domain
         if gradient is None:
-            self.gradient = odl.Gradient(self.domain)
+            self.gradient = odl.Gradient(self.domain, method='central')
         else:
             self.gradient = gradient
 
@@ -167,3 +205,36 @@ class GeometricDeformationAction(LieAction):
         assert m in self.domain
         gradf = self.gradient(f)
         return self.lie_group.associated_algebra.element(gradf * m)
+
+
+class JacobianDeterminantScalingAction(LieAction):
+
+    """Action via geometric deformation of image."""
+
+    def __init__(self, lie_group, domain):
+        LieAction.__init__(self, lie_group, domain)
+        assert lie_group.domain == domain
+        self.gradient = odl.Gradient(self.domain, method='forward',
+                                     pad_mode='order1')
+        self.partials = [odl.PartialDerivative(self.domain, axis=i,
+                                               method='forward',
+                                               pad_mode='order1')
+                         for i in range(domain.ndim)]
+
+    def action(self, lie_grp_element):
+        assert lie_grp_element in self.lie_group
+        jacobian = _pspace_el_asmatrix([self.gradient(xi)
+                                        for xi in lie_grp_element.data])
+        det_jac = 1 / np.linalg.det(jacobian)
+        det_jac = self.domain.element(det_jac)
+        return odl.MultiplyOperator(det_jac)
+
+    def inf_action(self, lie_alg_element):
+        # TODO
+        raise NotImplementedError
+
+    def momentum_map(self, f, m):
+        assert f in self.domain
+        assert m in self.domain
+        part_derivs = [-parti.adjoint(f * m) for parti in self.partials]
+        return self.lie_group.associated_algebra.element(part_derivs)
