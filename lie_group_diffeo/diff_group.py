@@ -121,7 +121,7 @@ class DiffAlgebra(LieAlgebra):
         self.data_space = lie_group.coord_space
 
         # TODO: This needs to be severely improved
-        self.indicator = lie_group.domain.element(
+        self.indicator = lie_group.coord_space[0].element(
             lambda x: np.exp(-sum((xi/0.85)**20 for xi in x)))
 
     def _lincomb(self, a, x1, b, x2, out):
@@ -142,6 +142,7 @@ class DiffAlgebra(LieAlgebra):
         if inp is None:
             return self.zero()
         else:
+            inp = self.data_space.element(inp)
             return self.element_type(self, self.project(inp))
 
     def project(self, vectors):
@@ -168,7 +169,7 @@ class DiffAlgebra(LieAlgebra):
 class DiffAlgebraElement(LieAlgebraElement):
     def __init__(self, lie_algebra, data):
         LieAlgebraElement.__init__(self, lie_algebra)
-        self.data = self.lie_algebra.data_space.element(data)
+        self.data = data
 
     def __repr__(self):
         return '{!r}.element({!r})'.format(self.space, self.data)
@@ -209,7 +210,7 @@ class GeometricDeformationAction(LieAction):
 
 class JacobianDeterminantScalingAction(LieAction):
 
-    """Action via geometric deformation of image."""
+    """Action via multiplication with inverse of jacobian determinant."""
 
     def __init__(self, lie_group, domain):
         LieAction.__init__(self, lie_group, domain)
@@ -230,8 +231,10 @@ class JacobianDeterminantScalingAction(LieAction):
         return odl.MultiplyOperator(det_jac)
 
     def inf_action(self, lie_alg_element):
-        # TODO
-        raise NotImplementedError
+        scale = sum(
+            parti(dati)
+            for parti, dati in zip(self.partials, lie_alg_element.data))
+        return odl.MultiplyOperator(-scale)
 
     def momentum_map(self, f, m):
         assert f in self.domain
