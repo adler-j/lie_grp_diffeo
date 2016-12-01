@@ -144,13 +144,14 @@ class InverseAction(LieAction):
 
     def __init__(self, base_action):
         assert isinstance(base_action, LieAction)
+        self.base_action = base_action
         LieAction.__init__(self, base_action.lie_group, base_action.domain)
 
     def action(self, lie_grp_element):
         return self.base_action.action(lie_grp_element.inverse)
 
     def inf_action(self, lie_alg_element):
-        return -self.base_action.inf_action(lie_alg_element.inverse)
+        return -self.base_action.inf_action(lie_alg_element)
 
     def momentum_map(self, v, m):
         return -self.base_action.momentum_map(v, m)
