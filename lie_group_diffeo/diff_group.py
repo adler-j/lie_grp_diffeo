@@ -68,19 +68,22 @@ class Diff(LieGroup):
         assert coord_space.is_power_space
         self.coord_space = coord_space
 
-    def element(self, inp=None):
+    def element(self, inp=None, inp_inv=None):
         """Create element from ``inp``."""
-        if inp is None:
+        if inp is None and inp_inv is None:
             return self.identity
+        elif inp is None or inp_inv is None:
+            raise TypeError('Need to provide both inv and inp_inv')
         else:
             inp = self.coord_space.element(inp)
-            return self.element_type(self, inp)
+            inp_inv = self.coord_space.element(inp_inv)
+            return self.element_type(self, inp, inp_inv)
 
     @property
     def identity(self):
         """The mapping x -> x."""
         pts = self.coord_space[0].points().T
-        return self.element(pts)
+        return self.element(pts, pts)
 
     @property
     def associated_algebra(self):
@@ -100,14 +103,21 @@ class Diff(LieGroup):
 
 
 class DiffElement(LieGroupElement):
-    def __init__(self, lie_group, data):
+    def __init__(self, lie_group, data, data_inv):
         LieGroupElement.__init__(self, lie_group)
         self.data = data
+        self.data_inv = data_inv
+
+    @property
+    def inverse(self):
+        return self.lie_group.element(self.data_inv, self.data)
 
     def compose(self, other):
         pts = _pspace_el_asarray(other.data)
         def_pts = [dati.interpolation(pts) for dati in self.data]
-        return self.lie_group.element(def_pts)
+        pts_inv = _pspace_el_asarray(self.data_inv)
+        def_pts_inv = [dati.interpolation(pts_inv) for dati in other.data_inv]
+        return self.lie_group.element(def_pts, def_pts_inv)
 
     def __repr__(self):
         return '{!r}.element({!r})'.format(self.lie_group, self.data)
@@ -155,7 +165,7 @@ class DiffAlgebra(LieAlgebra):
         """Exponential map via addition."""
         pts = self.data_space[0].points().T
         increment = _pspace_el_asarray(el.data)
-        return self.lie_group.element(pts + increment)
+        return self.lie_group.element(pts + increment, pts - increment)
 
     def __eq__(self, other):
         return (isinstance(other, DiffAlgebra) and

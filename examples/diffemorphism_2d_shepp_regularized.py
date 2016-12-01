@@ -49,9 +49,9 @@ regularizer_action = lgd.JacobianDeterminantScalingAction(lie_grp, space)
 g = lie_grp.identity
 
 # Combine action and functional into single object.
-action = lgd.ProductSpaceAction(deform_action, regularizer_action, geometric_deform_action)
-x = action.domain.element([template, w, grid]).copy()
-f = odl.solvers.SeparableSum(data_matching, regularizer, odl.solvers.ZeroFunctional(space))
+action = lgd.ProductSpaceAction(deform_action, regularizer_action, geometric_deform_action, lgd.InverseAction(geometric_deform_action))
+x = action.domain.element([template, w, grid, grid]).copy()
+f = odl.solvers.SeparableSum(data_matching, regularizer, odl.solvers.ZeroFunctional(space), odl.solvers.ZeroFunctional(space))
 
 # Show some results, reuse the plot
 template.show('template')
@@ -63,7 +63,7 @@ callback = odl.solvers.CallbackShow('diffemorphic matching', display_step=20)
 callback &= odl.solvers.CallbackPrint(f)
 
 # Smoothing
-filter_width = 0.4  # standard deviation of the Gaussian filter
+filter_width = 0.2  # standard deviation of the Gaussian filter
 ft = odl.trafos.FourierTransform(space)
 c = filter_width ** 2 / 4.0 ** 2
 gaussian = ft.range.element(lambda x: np.exp(-(x[0] ** 2 + x[1] ** 2) * c))
@@ -84,3 +84,4 @@ result = lgd.gradient_flow_solver(x, f, g, action, Ainv=Ainv,
 
 result.data.show('Resulting diffeo')
 (result.data - lie_grp.identity.data).show('translations')
+(result.data_inv - lie_grp.identity.data).show('translations inverse')
