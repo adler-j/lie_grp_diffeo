@@ -19,32 +19,6 @@ def _pspace_el_asarray(element):
     return pts
 
 
-def _moveaxis(arr, source, dest):
-    """Implementation of `numpy.moveaxis`.
-
-    Needed since `numpy.moveaxis` requires numpy 1.11, which ODL doesn't
-    have as a dependency.
-    """
-    try:
-        source = list(source)
-    except TypeError:
-        source = [source]
-    try:
-        dest = list(dest)
-    except TypeError:
-        dest = [dest]
-
-    source = [a + arr.ndim if a < 0 else a for a in source]
-    dest = [a + arr.ndim if a < 0 else a for a in dest]
-
-    order = [n for n in range(arr.ndim) if n not in source]
-
-    for dest, src in sorted(zip(dest, source)):
-        order.insert(dest, src)
-
-    return arr.transpose(order)
-
-
 def _pspace_el_asmatrix(vec):
     """Convert ``x`` to an array."""
     domain = vec[0].space
