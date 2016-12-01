@@ -9,7 +9,8 @@ import odl
 from numbers import Integral
 
 
-__all__ = ('LieAction', 'ProductSpaceAction', 'IdentityAction')
+__all__ = ('LieAction', 'ProductSpaceAction', 'IdentityAction',
+           'ComposedAction')
 
 
 class LieAction(object):
@@ -33,7 +34,7 @@ class LieAction(object):
 
     def momentum_map(self, v, m):
         """The momentum map corresponding to the infinitesimal action.
-        Returns a `lie_group.associated_algebra` object associated with 
+        Returns a `lie_group.associated_algebra` object associated with
         base point ``v`` and momentum ``m``.
         """
         raise NotImplementedError('abstract method')
@@ -44,17 +45,18 @@ class ProductSpaceAction(LieAction):
     """Action on a product space as defined by several "sub-actions"."""
 
     def __init__(self, *actions):
-
         # Allow ProductSpaceAction(action, 3) style syntax.
         if (len(actions) == 2 and
                 isinstance(actions[0], LieAction) and
                 isinstance(actions[1], Integral)):
             actions = [actions[0]] * actions[1]
-
-        self.lie_group = actions[0].lie_group
-        self.domain = odl.ProductSpace(*[ac.domain for ac in actions])
-        self.actions = actions
         assert all(ac.lie_group == actions[0].lie_group for ac in actions)
+
+        lie_group = actions[0].lie_group
+        domain = odl.ProductSpace(*[ac.domain for ac in actions])
+        self.actions = actions
+
+        LieAction.__init__(self, lie_group, domain)
 
     def action(self, lie_grp_element):
         assert lie_grp_element in self.lie_group
@@ -90,3 +92,47 @@ def IdentityAction(LieAction):
         assert v in self.domain
         assert m in self.domain
         return self.lie_group.associated_algebra.zero()
+
+
+class ComposedAction(LieAction):
+
+    """The action of two composed actions.
+
+    phi(g, x) = phi_2(g, phi_1(g, x))
+
+    Here, we need to assume phi_2 is linear in the second argument.
+    """
+
+    def __init__(self, inner, outer):
+        assert isinstance(inner, LieAction)
+        assert isinstance(outer, LieAction)
+
+        assert inner.lie_group == outer.lie_group
+        assert inner.domain == outer.domain
+
+        self.inner = inner
+        self.outer = outer
+
+        LieAction.__init__(self, inner.lie_group, inner.domain)
+
+    def action(self, lie_grp_element):
+        assert lie_grp_element in self.lie_group
+
+        action_inner = self.inner.action(lie_grp_element)
+        action_outer = self.outer.action(lie_grp_element)
+        return action_outer * action_inner
+
+    def inf_action(self, lie_alg_element):
+        assert lie_alg_element in self.lie_group.associated_algebra
+
+        inf_action_inner = self.inner.inf_action(lie_alg_element)
+        inf_action_outer = self.outer.inf_action(lie_alg_element)
+        return inf_action_inner + inf_action_outer
+
+    def momentum_map(self, v, m):
+        assert v in self.domain
+        assert m in self.domain
+
+        momentum_map_inner = self.inner.momentum_map(v, m)
+        momentum_map_outer = self.outer.momentum_map(v, m)
+        return momentum_map_inner + momentum_map_outer
