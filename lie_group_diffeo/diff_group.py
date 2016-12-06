@@ -106,7 +106,7 @@ class DiffAlgebra(LieAlgebra):
 
         # TODO: This needs to be severely improved
         self.indicator = lie_group.coord_space[0].element(
-            lambda x: np.exp(-sum((xi/0.85)**20 for xi in x)))
+            lambda x: np.exp(-sum((xi/0.92)**50 for xi in x)))
 
     def _lincomb(self, a, x1, b, x2, out):
         """Linear combination by data space."""
