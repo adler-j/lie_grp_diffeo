@@ -1,7 +1,8 @@
 import odl
 import numpy as np
-from lie_group import LieGroup, LieGroupElement, LieAlgebra, LieAlgebraElement
-from action import LieAction
+from lie_group_diffeo.lie_group import (LieGroup, LieGroupElement, LieAlgebra,
+                                        LieAlgebraElement)
+from lie_group_diffeo.action import LieAction
 
 
 __all__ = ('Diff', 'GeometricDeformationAction',

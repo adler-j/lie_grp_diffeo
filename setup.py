@@ -28,5 +28,5 @@ setup(
     packages=find_packages(exclude=['*test*']),
     package_dir={'lie_grp_diffeo': 'lie_grp_diffeo'},
 
-    install_requires=['numpy', 'odl']
+    install_requires=['numpy', 'odl>=0.6']
 )

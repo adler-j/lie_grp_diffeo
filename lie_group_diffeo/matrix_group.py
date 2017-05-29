@@ -328,12 +328,12 @@ class MatrixVectorAction(LieAction):
 
     def action(self, lie_grp_element):
         assert lie_grp_element in self.lie_group
-        return odl.MatVecOperator(lie_grp_element.arr,
+        return odl.MatrixOperator(lie_grp_element.arr,
                                   self.domain, self.domain)
 
     def inf_action(self, lie_alg_element):
         assert lie_alg_element in self.lie_group.associated_algebra
-        return odl.MatVecOperator(lie_alg_element.arr,
+        return odl.MatrixOperator(lie_alg_element.arr,
                                   self.domain, self.domain)
 
     def momentum_map(self, v, m):
@@ -419,14 +419,14 @@ class MatrixVectorAffineAction(LieAction):
 
     def action(self, lie_grp_element):
         assert lie_grp_element in self.lie_group
-        matrix_op = odl.MatVecOperator(lie_grp_element.arr[:-1, :-1],
+        matrix_op = odl.MatrixOperator(lie_grp_element.arr[:-1, :-1],
                                        self.domain, self.domain)
         translation_vec = self.domain.element(lie_grp_element.arr[:-1, -1])
         return matrix_op + translation_vec
 
     def inf_action(self, lie_alg_element):
         assert lie_alg_element in self.lie_group.associated_algebra
-        matrix_op = odl.MatVecOperator(lie_alg_element.arr[:-1, :-1],
+        matrix_op = odl.MatrixOperator(lie_alg_element.arr[:-1, :-1],
                                        self.domain, self.domain)
         translation_vec = self.domain.element(lie_alg_element.arr[:-1, -1])
         return matrix_op + translation_vec

@@ -103,7 +103,7 @@ target.show('target')
 
 # Create callback that displays the current iterate and prints the function
 # value
-callback = odl.solvers.CallbackShow(lie_grp_type, display_step=10, indices=0)
+callback = odl.solvers.CallbackShow(lie_grp_type, step=10, indices=0)
 callback &= odl.solvers.CallbackPrint(f)
 
 # Solve via gradient flow

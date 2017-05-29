@@ -82,7 +82,7 @@ target.show(fig=fig)
 
 # Create callback that displays the current iterate and prints the function
 # value
-callback = odl.solvers.CallbackShow(lie_grp_type, display_step=10,
+callback = odl.solvers.CallbackShow(lie_grp_type, step=10,
                                     indices=0, fig=[fig])
 callback &= odl.solvers.CallbackPrint(f)
 

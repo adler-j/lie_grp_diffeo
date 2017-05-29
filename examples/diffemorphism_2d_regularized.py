@@ -41,7 +41,7 @@ target.show('target')
 
 # Create callback that displays the current iterate and prints the function
 # value
-callback = odl.solvers.CallbackShow('diffemorphic matching', display_step=5)
+callback = odl.solvers.CallbackShow('diffemorphic matching', step=5)
 callback &= odl.solvers.CallbackPrint(f)
 
 # Solve via gradient flow

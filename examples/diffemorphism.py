@@ -28,7 +28,7 @@ target.show(fig=fig)
 
 # Create callback that displays the current iterate and prints the function
 # value
-callback = odl.solvers.CallbackShow('diffemorphic matching', display_step=50,
+callback = odl.solvers.CallbackShow('diffemorphic matching', step=50,
                                     fig=fig)
 callback &= odl.solvers.CallbackPrint(f)
 
